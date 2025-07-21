@@ -5,7 +5,7 @@ if [ "$#" -eq 0 ]; then
    exit 1
 fi
 
-min=$1
+min=$1   #$1 is the first argument here not value 1
 max=$1
 
 for num in "$@"
