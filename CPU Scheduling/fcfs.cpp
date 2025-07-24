@@ -9,45 +9,70 @@ struct Process {
     int burst_time;
     int waiting_time;
     int turnaround_time;
+    bool completed = false;
 };
 
 int main() {
     int n;
-    cout << "Enter the number of processes: ";
+    cout << "Enter number of processes: ";
     cin >> n;
 
     vector<Process> processes(n);
 
     for (int i = 0; i < n; ++i) {
         processes[i].pid = i + 1;
-        cout << "Enter arrival time of process " << i + 1 << ": ";
+        cout << "Enter arrival time for P" << i + 1 << ": ";
         cin >> processes[i].arrival_time;
-        cout << "Enter burst time of process " << i + 1 << ": ";
+        cout << "Enter burst time for P" << i + 1 << ": ";
         cin >> processes[i].burst_time;
     }
 
-    // Sort based on arrival time
-    sort(processes.begin(), processes.end(), [](Process a, Process b) {
-        return a.arrival_time < b.arrival_time;
-    });
-
-    int current_time = 0;
+    int current_time = 0, completed = 0;
     float total_waiting_time = 0, total_turnaround_time = 0;
 
     cout << "\nGantt Chart:\n";
-    for (auto &p : processes) {
-        if (current_time < p.arrival_time)
-            current_time = p.arrival_time;
 
-        p.waiting_time = current_time - p.arrival_time;
-        p.turnaround_time = p.waiting_time + p.burst_time;
+    while (completed < n) {
+        int idx = -1;
+        int min_burst = 1e9;
 
-        total_waiting_time += p.waiting_time;
-        total_turnaround_time += p.turnaround_time;
+        // Find the next shortest job that has arrived
+        for (int i = 0; i < n; ++i) {
+            if (!processes[i].completed && processes[i].arrival_time <= current_time) {
+                if (processes[i].burst_time < min_burst) {
+                    min_burst = processes[i].burst_time;
+                    idx = i;
+                }
+            }
+        }
 
-        cout << "| P" << p.pid << " ";
-        current_time += p.burst_time;
+        if (idx != -1) {
+            Process &p = processes[idx];
+            p.waiting_time = current_time - p.arrival_time;
+            if (p.waiting_time < 0) p.waiting_time = 0;
+
+            current_time += p.burst_time;
+            p.turnaround_time = p.waiting_time + p.burst_time;
+            p.completed = true;
+            completed++;
+
+            total_waiting_time += p.waiting_time;
+            total_turnaround_time += p.turnaround_time;
+
+            cout << "| P" << p.pid << " ";
+        } else {
+            // No process has arrived yet — jump to next earliest arriving process
+            int earliest = 1e9;
+            for (int i = 0; i < n; ++i) {
+                if (!processes[i].completed && processes[i].arrival_time < earliest) {
+                    earliest = processes[i].arrival_time;
+                    idx = i;
+                }
+            }
+            current_time = processes[idx].arrival_time;
+        }
     }
+
     cout << "|\n";
 
     cout << "\nProcess\tArrival\tBurst\tWaiting\tTurnaround\n";
@@ -56,8 +81,8 @@ int main() {
              << "\t" << p.waiting_time << "\t" << p.turnaround_time << "\n";
     }
 
-    cout << "\nAverage waiting time: " << total_waiting_time / n;
-    cout << "\nAverage turnaround time: " << total_turnaround_time / n << "\n";
+    cout << "\nAverage Waiting Time: " << total_waiting_time / n;
+    cout << "\nAverage Turnaround Time: " << total_turnaround_time / n << "\n";
 
     return 0;
 }
